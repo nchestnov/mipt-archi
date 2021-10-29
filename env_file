@@ -1,0 +1,4 @@
+DB_ROOT_PASSWORD=secret
+DB_LOGIN=webserver_admin
+DB_PASSWORD=admin
+DB_NAME=webserver
