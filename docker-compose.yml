@@ -1,11 +1,11 @@
 version: '3'
 
-
-
 services:
   mysql:
     image: mysql:latest
     restart: unless-stopped
+    command:
+      - --secure-file-priv=/
     environment:
       MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
       MYSQL_USER: ${DB_LOGIN}

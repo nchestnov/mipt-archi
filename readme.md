@@ -7,6 +7,7 @@ Main Task - create REST API.
 ## Files
 
 - web_server/ - source code of web server based on Poco library
+- Architect.postman_collection.json - Postman Collection of request for testing
 - docker-compose.yml - Docker Compose file for deploying server
 - Dockerfile - Dockerfile for building web server
 - env_file - file with environment variables for deployment
@@ -18,10 +19,10 @@ Main Task - create REST API.
     
     `docker build . -t archi`
 
-2. Deploy Docker Compose:
+2. Deploy Docker Compose with env_file:
    
-   `docker-compose up -d`
+   `docker-compose --env-file env_file up -d`
 
-3. Wait a minute for MySQL server to fully deploy. Then run initialization script:
+3. Wait a minute for MySQL server to fully deploy. Then run initialization script to init table and fill with initial data:
    
    `./init_db.sh`
