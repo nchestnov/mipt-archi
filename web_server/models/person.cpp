@@ -1,11 +1,15 @@
 #include "person.h"
 #include "../db_connector/db_connector.h"
+#include "../db_connector/cache.h"
 #include <Poco/Data/RecordSet.h>
+#include <Poco/JSON/Parser.h>
+#include "Poco/Logger.h"
 
 using namespace Poco::Data::Keywords;
 using Poco::Data::Session;
 using Poco::Data::Statement;
 using Poco::Data::RecordSet;
+using Poco::Logger;
 
 namespace database {
     Poco::JSON::Object::Ptr Person::toJSON() const {
@@ -19,8 +23,12 @@ namespace database {
         return root;
     }
 
-    Person Person::fromJSON(const Poco::JSON::Object::Ptr &object) {
+    Person Person::fromJSON(const std::string &str) {
         Person person;
+
+        Poco::JSON::Parser parser;
+        Poco::Dynamic::Var result = parser.parse(str);
+        Poco::JSON::Object::Ptr object = result.extract<Poco::JSON::Object::Ptr>();
 
         person.login() = object->getValue<std::string>("login");
         person.first_name() = object->getValue<std::string>("first_name");
@@ -30,7 +38,7 @@ namespace database {
         return person;
     }
 
-    Person Person::findByLogin(std::string login) {
+    Person Person::db_get_by_login(std::string login) {
         try {
             Poco::Data::Session session = database::Database::get().create_session();
             Poco::Data::Statement select(session);
@@ -49,13 +57,28 @@ namespace database {
             return person;
         }
 
-        catch (Poco::Data::MySQL::ConnectionException &e) {
-            std::cout << "connection:" << e.what() << std::endl;
+        catch (Poco::Data::MySQL::ConnectionException &err) {
+            std::string err_string = err.what();
+            Logger::root().error("MySQL Connection Error: " + err_string);
             throw;
         }
-        catch (Poco::Data::MySQL::StatementException &e) {
+        catch (Poco::Data::MySQL::StatementException &err) {
+            std::string err_string = err.what();
+            Logger::root().error("MySQL Statement Error: " + err_string);
+            throw;
+        }
+    }
 
-            std::cout << "statement:" << e.what() << std::endl;
+    Person Person::cache_get_by_login(std::string login) {
+        try {
+            std::string result;
+            if (database::Cache::get().get(login, result))
+                return fromJSON(result);
+            else
+                throw std::logic_error("key not found in the cache");
+        } catch (std::exception& err) {
+            std::string err_string = err.what();
+            Logger::root().error("cache_get_by_login: " + err_string);
             throw;
         }
     }
@@ -90,13 +113,14 @@ namespace database {
             return result;
         }
 
-        catch (Poco::Data::MySQL::ConnectionException &e) {
-            std::cout << "connection:" << e.what() << std::endl;
+        catch (Poco::Data::MySQL::ConnectionException &err) {
+            std::string err_string = err.what();
+            Logger::root().error("MySQL Connection Error: " + err_string);
             throw;
         }
-        catch (Poco::Data::MySQL::StatementException &e) {
-
-            std::cout << "statement:" << e.what() << std::endl;
+        catch (Poco::Data::MySQL::StatementException &err) {
+            std::string err_string = err.what();
+            Logger::root().error("MySQL Statement Error: " + err_string);
             throw;
         }
     }
@@ -115,15 +139,23 @@ namespace database {
 
             insert.execute();
         }
-        catch (Poco::Data::MySQL::ConnectionException &e) {
-            std::cout << "connection:" << e.what() << std::endl;
+        catch (Poco::Data::MySQL::ConnectionException &err) {
+            std::string err_string = err.what();
+            Logger::root().error("MySQL Connection Error: " + err_string);
             throw;
         }
-        catch (Poco::Data::MySQL::StatementException &e) {
+        catch (Poco::Data::MySQL::StatementException &err) {
+            std::string err_string = err.what();
+            Logger::root().error("MySQL Statement Error: " + err_string);
+            throw;
+        }
+    }
 
-            std::cout << "statement:" << e.what() << std::endl;
-            throw;
-        }
+    void Person::cache_save() {
+        std::stringstream ss;
+        Poco::JSON::Stringifier::stringify(toJSON(), ss);
+        std::string message = ss.str();
+        database::Cache::get().put(_login, message);
     }
 
     void Person::db_delete() {
@@ -137,13 +169,14 @@ namespace database {
 
             insert.execute();
         }
-        catch (Poco::Data::MySQL::ConnectionException &e) {
-            std::cout << "connection:" << e.what() << std::endl;
+        catch (Poco::Data::MySQL::ConnectionException &err) {
+            std::string err_string = err.what();
+            Logger::root().error("MySQL Connection Error: " + err_string);
             throw;
         }
-        catch (Poco::Data::MySQL::StatementException &e) {
-
-            std::cout << "statement:" << e.what() << std::endl;
+        catch (Poco::Data::MySQL::StatementException &err) {
+            std::string err_string = err.what();
+            Logger::root().error("MySQL Statement Error: " + err_string);
             throw;
         }
     }

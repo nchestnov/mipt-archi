@@ -15,7 +15,7 @@ namespace database {
         bool _not_found = false;
 
     public:
-        static Person fromJSON(const Poco::JSON::Object::Ptr &object);
+        static Person fromJSON(const std::string &str);
 
         const std::string &get_login() const;
 
@@ -35,17 +35,17 @@ namespace database {
 
         bool check();
 
-        //static void init();
+        static Person db_get_by_login(std::string login);
 
-        static Person findByLogin(std::string login);
-
-        //static std::vector<Person> read_all();
+        static Person cache_get_by_login(std::string login);
 
         static std::vector<Person> searchByNames(std::string first_name, std::string last_name);
 
         void db_save();
 
         void db_delete();
+
+        void cache_save();
 
         Poco::JSON::Object::Ptr toJSON() const;
 

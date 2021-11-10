@@ -28,6 +28,16 @@ const std::string &Config::get_db_password() const {
     return _db_password;
 }
 
+const std::string &Config::get_cache_servers() const
+{
+    return _cache_servers;
+}
+
+std::string &Config::cache_servers()
+{
+    return _cache_servers;
+}
+
 std::string &Config::db_port() {
     return _db_port;
 }

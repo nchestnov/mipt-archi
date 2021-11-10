@@ -6,12 +6,12 @@
 	},
 	"item": [
 		{
-			"name": "localhost:8080/person",
+			"name": "GET Persons by first_name and last_name",
 			"request": {
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "localhost:8080/person?first_name=jo&last_name",
+					"raw": "localhost:8080/person?first_name=nic&last_name=",
 					"host": [
 						"localhost"
 					],
@@ -22,11 +22,11 @@
 					"query": [
 						{
 							"key": "first_name",
-							"value": "jo"
+							"value": "nic"
 						},
 						{
 							"key": "last_name",
-							"value": null
+							"value": ""
 						}
 					]
 				}
@@ -34,7 +34,64 @@
 			"response": []
 		},
 		{
-			"name": "localhost:8080/person?login=",
+			"name": "GET Existing User",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "localhost:8080/person?login=nsecretgz",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"person"
+					],
+					"query": [
+						{
+							"key": "login",
+							"value": "nsecretgz"
+						},
+						{
+							"key": "no_cache",
+							"value": "1",
+							"disabled": true
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "GET Existing User - NoCache",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "localhost:8080/person?login=nsecretgz&no_cache=1",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"person"
+					],
+					"query": [
+						{
+							"key": "login",
+							"value": "nsecretgz"
+						},
+						{
+							"key": "no_cache",
+							"value": "1"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "GET New User",
 			"request": {
 				"method": "GET",
 				"header": [],
@@ -51,6 +108,11 @@
 						{
 							"key": "login",
 							"value": "jojo"
+						},
+						{
+							"key": "no_cache",
+							"value": "1",
+							"disabled": true
 						}
 					]
 				}
@@ -58,7 +120,35 @@
 			"response": []
 		},
 		{
-			"name": "localhost:8080/person",
+			"name": "GET New User - NoCache",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "localhost:8080/person?login=nsecretgz&no_cache=1",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"person"
+					],
+					"query": [
+						{
+							"key": "login",
+							"value": "nsecretgz"
+						},
+						{
+							"key": "no_cache",
+							"value": "1"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "POST New User",
 			"request": {
 				"method": "POST",
 				"header": [],

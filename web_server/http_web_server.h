@@ -124,6 +124,13 @@ protected:
                         .repeatable(false)
                         .argument("value")
                         .callback(OptionCallback<HTTPWebServer>(this, &HTTPWebServer::handleDBPassword)));
+
+        options.addOption(
+                Option("cache_servers", "", "Ignite Cache servers")
+                        .required(false)
+                        .repeatable(false)
+                        .argument("value")
+                        .callback(OptionCallback<HTTPWebServer>(this, &HTTPWebServer::handleCacheServers)));
     }
 
     void handleHelp([[maybe_unused]] const std::string &name, [[maybe_unused]] const std::string &value){
@@ -154,6 +161,10 @@ protected:
 
     void handleDBPassword([[maybe_unused]] const std::string &name, [[maybe_unused]] const std::string &value){
         Config::get().db_password() = value;
+    }
+
+    void handleCacheServers([[maybe_unused]] const std::string &name, [[maybe_unused]] const std::string &value){
+        Config::get().cache_servers() = value;
     }
 
     int main([[maybe_unused]] const std::vector<std::string> &args) override{

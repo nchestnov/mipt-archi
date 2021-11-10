@@ -44,21 +44,55 @@ public:
         response.setChunkedTransferEncoding(true);
         response.setContentType("application/json");
 
+        bool no_cache = false;
+
         if (request.getMethod() == "GET") {
             if (form.has("login")) {
                 std::string login = form.get("login");
                 Logger::root().information("GET /person?login="+login);
 
-                database::Person person = database::Person::findByLogin(login);
+                if (form.has("no_cache"))
+                    no_cache = true;
+
                 Poco::JSON::Object::Ptr root = new Poco::JSON::Object();
-                if (person.check()) {
-                    root->set("login", person.get_login());
-                    root->set("first_name", person.get_first_name());
-                    root->set("last_name", person.get_last_name());
-                    root->set("age", person.get_age());
+
+                if (!no_cache)
+                {
+                    try {
+                        database::Person cache_result = database::Person::cache_get_by_login(login);
+                        Logger::root().information("Cache found for login: " + login);
+                        root->set("login", cache_result.get_login());
+                        root->set("first_name", cache_result.get_first_name());
+                        root->set("last_name", cache_result.get_last_name());
+                        root->set("age", cache_result.get_age());
+                    } catch (...) {
+                        Logger::root().information("Cache not found for login: " + login);
+                        database::Person db_result = database::Person::db_get_by_login(login);
+
+                        if (db_result.check()) {
+                            root->set("login", db_result.get_login());
+                            root->set("first_name", db_result.get_first_name());
+                            root->set("last_name", db_result.get_last_name());
+                            root->set("age", db_result.get_age());
+                            db_result.cache_save();
+                        } else {
+                            root->set("status", "person_not_found");
+                            response.setStatusAndReason(Poco::Net::HTTPResponse::HTTP_NOT_FOUND);
+                        }
+                    }
                 } else {
-                    root->set("status", "person_not_found");
-                    response.setStatusAndReason(Poco::Net::HTTPResponse::HTTP_NOT_FOUND);
+                    Logger::root().information("Ignored cache for login: " + login);
+                    database::Person db_result = database::Person::db_get_by_login(login);
+
+                    if (db_result.check()) {
+                        root->set("login", db_result.get_login());
+                        root->set("first_name", db_result.get_first_name());
+                        root->set("last_name", db_result.get_last_name());
+                        root->set("age", db_result.get_age());
+                    } else {
+                        root->set("status", "person_not_found");
+                        response.setStatusAndReason(Poco::Net::HTTPResponse::HTTP_NOT_FOUND);
+                    }
                 }
 
                 std::ostream &ostr = response.send();
@@ -90,12 +124,18 @@ public:
             Poco::JSON::Object::Ptr json = parser.parse(raw_json).extract<Poco::JSON::Object::Ptr>();
 
             if (json->has("login") && json->has("first_name") && json->has("last_name") && json->has("age")){
-                database::Person new_person = database::Person::fromJSON(json);
-                database::Person existing_person = database::Person::findByLogin(new_person.get_login());
+                database::Person new_person;
+
+                new_person.login() = json->getValue<std::string>("login");
+                new_person.first_name() = json->getValue<std::string>("first_name");
+                new_person.last_name() = json->getValue<std::string>("last_name");
+                new_person.age() = json->getValue<int>("age");
+                database::Person existing_person = database::Person::db_get_by_login(new_person.get_login());
                 if (existing_person.check()) {
                     response.setStatusAndReason(Poco::Net::HTTPResponse::HTTPStatus::HTTP_CONFLICT);
                 } else {
                     new_person.db_save();
+                    new_person.cache_save();
                     response.setStatusAndReason(Poco::Net::HTTPResponse::HTTPStatus::HTTP_CREATED);
                 }
             } else {

@@ -11,6 +11,14 @@ services:
       MYSQL_USER: ${DB_LOGIN}
       MYSQL_PASSWORD: ${DB_PASSWORD}
 
+  ignite1:
+    image: apacheignite/ignite:latest
+    restart: unless-stopped
+
+  ignite2:
+    image: apacheignite/ignite:latest
+    restart: unless-stopped
+
   webserver:
     image: archi:latest
     restart: unless-stopped
@@ -24,3 +32,6 @@ services:
       DB_NAME: ${DB_NAME}
       DB_LOGIN: ${DB_LOGIN}
       DB_PASSWORD: ${DB_PASSWORD}
+      CACHE_SERVERS: "ignite1:10800,ignite2:10800"
+
+
