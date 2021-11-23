@@ -20,7 +20,7 @@ services:
     restart: unless-stopped
 
   webserver:
-    image: archi:latest
+    image: zetman13/archi:task2
     restart: unless-stopped
     ports:
       - "8080:8080"
