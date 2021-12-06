@@ -17,12 +17,16 @@ Main Task - create REST API.
 
 1. Build Docker container:
     
-    `docker build . -t archi`
+    `docker build . -t zetman13/archi:task1`
 
-2. Deploy Docker Compose with env_file:
+   or pull existing image:
+
+   `docker pull zetman13/archi:task1`
+
+3. Deploy Docker Compose with env_file:
    
    `docker-compose --env-file env_file up -d`
 
-3. Wait a minute for MySQL server to fully deploy. Then run initialization script to init table and fill with initial data:
+4. Wait a minute for MySQL server to fully deploy. Then run initialization script to init table and fill with initial data:
    
    `./init_db.sh`

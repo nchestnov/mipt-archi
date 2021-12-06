@@ -1,6 +1,7 @@
 #ifndef PERSON_HANDLER_H
 #define PERSON_HANDLER_H
 
+#include <Poco/Data/RecordSet.h>
 #include "Poco/Net/HTTPServer.h"
 #include "Poco/Net/HTTPRequestHandler.h"
 #include "Poco/Net/HTTPRequestHandlerFactory.h"
@@ -21,7 +22,7 @@
 #include "Poco/Logger.h"
 
 using Poco::Logger;
-
+using Poco::Data::RecordSet;
 using Poco::ThreadPool;
 using Poco::StreamCopier;
 using Poco::Net::HTTPRequestHandler;
@@ -38,72 +39,89 @@ public:
     explicit PersonRequestHandler(std::string format) : _format(std::move(format)) {
     }
 
-    void handleRequest(HTTPServerRequest &request, HTTPServerResponse &response) override {
-        Poco::Net::HTMLForm form(request);
+    void get_person_by_login(Poco::Net::HTMLForm &form, HTTPServerResponse &response){
+        std::string login = form.get("login");
 
+        std::ostream &ostr = response.send();
+        try{
+            database::Person person = database::Person::findByLogin(login);
+            Poco::JSON::Stringifier::stringify(person.toJSON(), ostr);
+        } catch(Poco::Data::NoDataException&) {
+            Poco::JSON::Object::Ptr root = new Poco::JSON::Object();
+            root->set("status", "person_not_found");
+            response.setStatusAndReason(Poco::Net::HTTPResponse::HTTP_NOT_FOUND);
+            Poco::JSON::Stringifier::stringify(root, ostr);
+        }
+
+        Logger::root().information("GET /person?login="+login);
+    }
+
+    void get_person_by_names(Poco::Net::HTMLForm &form, HTTPServerResponse &response){
+        std::string first_name = form.get("first_name");
+        std::string last_name = form.get("last_name");
+
+        Poco::JSON::Array arr;
+        std::vector<database::Person> result = database::Person::searchByNames(first_name, last_name);
+
+        for (auto &i: result) {
+            arr.add(i.toJSON());
+        }
+        std::ostream &ostr = response.send();
+        Poco::JSON::Stringifier::stringify(arr, ostr);
+
+        Logger::root().information("GET /person?first_name="+first_name+"&last_name="+last_name);
+    }
+
+    bool validate_json(Poco::JSON::Object::Ptr &json){
+        return json->has("login") && json->has("first_name") && json->has("last_name") && json->has("age");
+    }
+
+    void post_person(Poco::JSON::Object::Ptr &json, HTTPServerResponse &response){
+        database::Person new_person = database::Person::fromJSON(json);
+        try {
+            database::Person existing_person = database::Person::findByLogin(new_person.get_login());
+            response.setStatusAndReason(Poco::Net::HTTPResponse::HTTPStatus::HTTP_CONFLICT);
+        } catch(Poco::Data::NoDataException&) {
+            new_person.db_save();
+            response.setStatusAndReason(Poco::Net::HTTPResponse::HTTPStatus::HTTP_CREATED);
+        }
+
+        Logger::root().information("POST /person");
+    }
+
+    void bad_request(HTTPServerResponse &response){
+        Logger::root().warning("Bad Request");
+        response.setStatusAndReason(Poco::Net::HTTPResponse::HTTPStatus::HTTP_NOT_FOUND);
+    }
+
+    void handleRequest(HTTPServerRequest &request, HTTPServerResponse &response) override {
         response.setChunkedTransferEncoding(true);
         response.setContentType("application/json");
 
         if (request.getMethod() == "GET") {
+            Poco::Net::HTMLForm form(request);
+
             if (form.has("login")) {
-                std::string login = form.get("login");
-                Logger::root().information("GET /person?login="+login);
-
-                database::Person person = database::Person::findByLogin(login);
-                Poco::JSON::Object::Ptr root = new Poco::JSON::Object();
-                if (person.check()) {
-                    root->set("login", person.get_login());
-                    root->set("first_name", person.get_first_name());
-                    root->set("last_name", person.get_last_name());
-                    root->set("age", person.get_age());
-                } else {
-                    root->set("status", "person_not_found");
-                    response.setStatusAndReason(Poco::Net::HTTPResponse::HTTP_NOT_FOUND);
-                }
-
-                std::ostream &ostr = response.send();
-                Poco::JSON::Stringifier::stringify(root, ostr);
-
+                get_person_by_login(form, response);
             } else if (form.has("first_name") && form.has("last_name")) {
-                std::string first_name = form.get("first_name");
-                std::string last_name = form.get("last_name");
-                Logger::root().information("GET /person?first_name="+first_name+"&last_name="+last_name);
-
-                Poco::JSON::Array arr;
-                std::vector<database::Person> result = database::Person::searchByNames(first_name, last_name);
-
-                for (auto &i: result) {
-                    arr.add(i.toJSON());
-                }
-                std::ostream &ostr = response.send();
-                Poco::JSON::Stringifier::stringify(arr, ostr);
+                get_person_by_names(form, response);
             } else {
-                response.setStatusAndReason(Poco::Net::HTTPResponse::HTTPStatus::HTTP_NOT_FOUND);
-                response.send();
+                bad_request(response);
             }
         } else if (request.getMethod() == "POST") {
-            Logger::root().information("POST /person");
             std::ostringstream out_string_stream;
             Poco::StreamCopier::copyStream(request.stream(), out_string_stream);
             std::string raw_json = out_string_stream.str();
             Poco::JSON::Parser parser;
             Poco::JSON::Object::Ptr json = parser.parse(raw_json).extract<Poco::JSON::Object::Ptr>();
 
-            if (json->has("login") && json->has("first_name") && json->has("last_name") && json->has("age")){
-                database::Person new_person = database::Person::fromJSON(json);
-                database::Person existing_person = database::Person::findByLogin(new_person.get_login());
-                if (existing_person.check()) {
-                    response.setStatusAndReason(Poco::Net::HTTPResponse::HTTPStatus::HTTP_CONFLICT);
-                } else {
-                    new_person.db_save();
-                    response.setStatusAndReason(Poco::Net::HTTPResponse::HTTPStatus::HTTP_CREATED);
-                }
+            if (validate_json(json)){
+                post_person(json, response);
             } else {
-                response.setStatusAndReason(Poco::Net::HTTPResponse::HTTPStatus::HTTP_BAD_REQUEST);
+                bad_request(response);
             }
         } else {
-            Logger::root().warning("Bad Request");
-            response.setStatusAndReason(Poco::Net::HTTPResponse::HTTPStatus::HTTP_NOT_FOUND);
+            bad_request(response);
         }
         response.send();
     }

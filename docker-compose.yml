@@ -12,7 +12,7 @@ services:
       MYSQL_PASSWORD: ${DB_PASSWORD}
 
   webserver:
-    image: archi:latest
+    image: zetman13/archi:task1
     restart: unless-stopped
     ports:
       - "8080:8080"

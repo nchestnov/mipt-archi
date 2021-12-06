@@ -1,17 +1,17 @@
 {
 	"info": {
-		"_postman_id": "9a26b28d-2917-4c10-8bb7-88f4063a5f85",
-		"name": "Architect",
+		"_postman_id": "f3e9d0c1-d5b8-4634-a636-1e055c540a0f",
+		"name": "Architect - Task 1",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"item": [
 		{
-			"name": "localhost:8080/person",
+			"name": "GET Persons by first_name and last_name",
 			"request": {
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "localhost:8080/person?first_name=jo&last_name",
+					"raw": "localhost:8080/person?first_name=nic&last_name=",
 					"host": [
 						"localhost"
 					],
@@ -22,11 +22,11 @@
 					"query": [
 						{
 							"key": "first_name",
-							"value": "jo"
+							"value": "nic"
 						},
 						{
 							"key": "last_name",
-							"value": null
+							"value": ""
 						}
 					]
 				}
@@ -34,7 +34,36 @@
 			"response": []
 		},
 		{
-			"name": "localhost:8080/person?login=",
+			"name": "GET Existing User",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "localhost:8080/person?login=nsecretgz",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"person"
+					],
+					"query": [
+						{
+							"key": "login",
+							"value": "nsecretgz"
+						},
+						{
+							"key": "no_cache",
+							"value": "1",
+							"disabled": true
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "GET New User",
 			"request": {
 				"method": "GET",
 				"header": [],
@@ -51,6 +80,11 @@
 						{
 							"key": "login",
 							"value": "jojo"
+						},
+						{
+							"key": "no_cache",
+							"value": "1",
+							"disabled": true
 						}
 					]
 				}
@@ -58,7 +92,7 @@
 			"response": []
 		},
 		{
-			"name": "localhost:8080/person",
+			"name": "POST New User",
 			"request": {
 				"method": "POST",
 				"header": [],

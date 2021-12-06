@@ -10,23 +10,19 @@ using Poco::Data::RecordSet;
 namespace database {
     Poco::JSON::Object::Ptr Person::toJSON() const {
         Poco::JSON::Object::Ptr root = new Poco::JSON::Object();
-
         root->set("login", _login);
         root->set("first_name", _first_name);
         root->set("last_name", _last_name);
         root->set("age", _age);
-
         return root;
     }
 
     Person Person::fromJSON(const Poco::JSON::Object::Ptr &object) {
         Person person;
-
         person.login() = object->getValue<std::string>("login");
         person.first_name() = object->getValue<std::string>("first_name");
         person.last_name() = object->getValue<std::string>("last_name");
         person.age() = object->getValue<int>("age");
-
         return person;
     }
 
@@ -42,11 +38,13 @@ namespace database {
                     into(person._age),
                     use(login),
                     range(0, 1); //  iterate over result set one row at a time
-
             select.execute();
             Poco::Data::RecordSet rs(select);
-            if (!rs.moveFirst()) person._not_found = true;
-            return person;
+            if (!rs.moveFirst()){
+                throw Poco::Data::NoDataException();
+            } else {
+                return person;
+            }
         }
 
         catch (Poco::Data::MySQL::ConnectionException &e) {
@@ -178,10 +176,5 @@ namespace database {
 
     int &Person::age() {
         return _age;
-    }
-
-    bool Person::check() {
-        //return !(_first_name.empty() && _last_name.empty() && _login.empty());
-        return !_not_found;
     }
 }

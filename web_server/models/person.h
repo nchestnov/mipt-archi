@@ -12,7 +12,6 @@ namespace database {
         std::string _first_name;
         std::string _last_name;
         int _age;
-        bool _not_found = false;
 
     public:
         static Person fromJSON(const Poco::JSON::Object::Ptr &object);
@@ -35,11 +34,7 @@ namespace database {
 
         bool check();
 
-        //static void init();
-
         static Person findByLogin(std::string login);
-
-        //static std::vector<Person> read_all();
 
         static std::vector<Person> searchByNames(std::string first_name, std::string last_name);
 
