@@ -13,6 +13,8 @@ namespace database {
         std::string _last_name;
         int _age;
 
+        static std::vector<Person> searchByNames_shard(std::string first_name, std::string last_name, std::string hint);
+
     public:
         static Person fromJSON(const Poco::JSON::Object::Ptr &object);
 
@@ -36,7 +38,7 @@ namespace database {
 
         static Person findByLogin(std::string login);
 
-        static std::vector<Person> searchByNames(std::string first_name, std::string last_name);
+        static std::vector<Person> searchByNames(const std::string& first_name, std::string last_name);
 
         void db_save();
 

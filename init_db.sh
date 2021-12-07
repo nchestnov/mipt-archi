@@ -2,7 +2,9 @@
 CONTAINER_NAME=archi_mysql_1
 export $(cat env_file | sed 's/#.*//g' | xargs)
 
-docker exec -i ${CONTAINER_NAME} mysql --user=root --password="${DB_ROOT_PASSWORD/$'\r'/}" << END
+for i in $(seq 1 2); do
+echo "archi_mysql${i}_1";
+docker exec -i "archi_mysql${i}_1" mysql --user=root --password="${DB_ROOT_PASSWORD/$'\r'/}" << END
 
 CREATE DATABASE webserver;
 GRANT ALL PRIVILEGES ON webserver.* TO 'webserver_admin'@'%';
@@ -19,6 +21,9 @@ CREATE TABLE IF NOT EXISTS Person (
 
 END
 
+done
+
+echo "Importing data to DB...";
 for i in `awk -F, '{if (NR>1) {print "{\"login\":\"" $1 "\",\"first_name\":\"" $2 "\",\"last_name\":\"" $3 "\",\"age\":" $4 "}"}}' mock_data.csv`; do
    curl --header "Content-Type: application/json" --request POST -s "http://localhost:8080/person" -d $i
 done

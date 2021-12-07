@@ -1,7 +1,7 @@
 {
 	"info": {
-		"_postman_id": "f3e9d0c1-d5b8-4634-a636-1e055c540a0f",
-		"name": "Architect - Task 1",
+		"_postman_id": "6d987cfe-3a50-441b-8201-5298a17ec507",
+		"name": "Architect - Task 3",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"item": [
@@ -11,7 +11,7 @@
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "localhost:8080/person?first_name=nic&last_name=",
+					"raw": "localhost:8080/person?first_name=alex&last_name=",
 					"host": [
 						"localhost"
 					],
@@ -22,7 +22,7 @@
 					"query": [
 						{
 							"key": "first_name",
-							"value": "nic"
+							"value": "alex"
 						},
 						{
 							"key": "last_name",
@@ -51,11 +51,6 @@
 						{
 							"key": "login",
 							"value": "nsecretgz"
-						},
-						{
-							"key": "no_cache",
-							"value": "1",
-							"disabled": true
 						}
 					]
 				}
@@ -80,11 +75,6 @@
 						{
 							"key": "login",
 							"value": "jojo"
-						},
-						{
-							"key": "no_cache",
-							"value": "1",
-							"disabled": true
 						}
 					]
 				}

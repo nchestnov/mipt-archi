@@ -1,11 +1,14 @@
+#include <future>
 #include "person.h"
 #include "../db_connector/db_connector.h"
 #include <Poco/Data/RecordSet.h>
+#include "Poco/Logger.h"
 
 using namespace Poco::Data::Keywords;
 using Poco::Data::Session;
 using Poco::Data::Statement;
 using Poco::Data::RecordSet;
+using Poco::Logger;
 
 namespace database {
     Poco::JSON::Object::Ptr Person::toJSON() const {
@@ -31,7 +34,10 @@ namespace database {
             Poco::Data::Session session = database::Database::get().create_session();
             Poco::Data::Statement select(session);
             Person person;
-            select << "SELECT login, first_name, last_name, age FROM Person where login=?",
+
+            std::string query = "SELECT login, first_name, last_name, age FROM Person where login=? ";
+            query += database::Database::sharding_hint(login);
+            select << query,
                     into(person._login),
                     into(person._first_name),
                     into(person._last_name),
@@ -58,42 +64,57 @@ namespace database {
         }
     }
 
-    std::vector<Person> Person::searchByNames(std::string first_name, std::string last_name) {
-        try {
-            Poco::Data::Session session = database::Database::get().create_session();
-            Statement select(session);
-            std::vector<Person> result;
-            Person person;
-            first_name += "%";
-            last_name += "%";
+    std::vector<Person> Person::searchByNames_shard(std::string first_name, std::string last_name, std::string hint){
+        Poco::Data::Session session = database::Database::get().create_session();
+        Statement select(session);
+        std::vector<Person> result;
+        Person person;
 
-            select
-                    << "SELECT login, first_name, last_name, age FROM Person WHERE first_name LIKE ? AND last_name LIKE ?",
-                    into(person._login),
-                    into(person._first_name),
-                    into(person._last_name),
-                    into(person._age),
-                    use(first_name),
-                    use(last_name),
-                    range(0, 1);
+        std::string query = "SELECT login, first_name, last_name, age FROM Person WHERE first_name LIKE ? AND last_name LIKE ? ";
+        query += hint;
 
+        select << query,
+                into(person._login),
+                into(person._first_name),
+                into(person._last_name),
+                into(person._age),
+                use(first_name),
+                use(last_name),
+                range(0, 1);
+
+        select.execute();
+
+        Poco::Data::RecordSet rs(select);
+        if (rs.moveFirst()) result.push_back(person);
+
+        while (!select.done()) {
             select.execute();
-            Poco::Data::RecordSet rs(select);
-            if (rs.moveFirst()) result.push_back(person);
-
-            while (!select.done()) {
-                select.execute();
-                result.push_back(person);
-            }
-            return result;
+            result.push_back(person);
         }
+        return result;
+    }
 
-        catch (Poco::Data::MySQL::ConnectionException &e) {
+    std::vector<Person> Person::searchByNames(const std::string& first_name, std::string last_name) {
+        try {
+            std::vector<std::future<std::vector<Person>>> futures;
+            for (const std::string &hint : database::Database::get_all_sharding_hint()){
+                auto handle = std::async(std::launch::async, [first_name, last_name, hint]() -> std::vector<Person> {
+                    return searchByNames_shard(first_name + "%", last_name + "%", hint);
+                });
+                futures.emplace_back(std::move(handle));
+            }
+
+            std::vector<Person> result;
+            for(std::future<std::vector<Person>>& res : futures){
+                std::vector<Person> v = res.get();
+                std::copy(std::begin(v), std::end(v), std::back_inserter(result));
+            }
+
+            return result;
+        } catch (Poco::Data::MySQL::ConnectionException &e) {
             std::cout << "connection:" << e.what() << std::endl;
             throw;
-        }
-        catch (Poco::Data::MySQL::StatementException &e) {
-
+        } catch (Poco::Data::MySQL::StatementException &e) {
             std::cout << "statement:" << e.what() << std::endl;
             throw;
         }
@@ -105,7 +126,10 @@ namespace database {
             Poco::Data::Session session = database::Database::get().create_session();
             Poco::Data::Statement insert(session);
 
-            insert << "INSERT INTO Person (login, first_name, last_name, age) VALUES(?, ?, ?, ?)",
+            std::string query = "INSERT INTO Person (login, first_name, last_name, age) VALUES(?, ?, ?, ?) ";
+            query += database::Database::sharding_hint(_login);
+
+            insert << query,
                     use(_login),
                     use(_first_name),
                     use(_last_name),
@@ -114,12 +138,11 @@ namespace database {
             insert.execute();
         }
         catch (Poco::Data::MySQL::ConnectionException &e) {
-            std::cout << "connection:" << e.what() << std::endl;
+            Logger::root().error(e.what());
             throw;
         }
         catch (Poco::Data::MySQL::StatementException &e) {
-
-            std::cout << "statement:" << e.what() << std::endl;
+            Logger::root().error(e.what());
             throw;
         }
     }

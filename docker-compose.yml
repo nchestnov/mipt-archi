@@ -1,26 +1,49 @@
 version: '3'
 
 services:
-  mysql:
-    image: mysql:latest
+  mysql1:
+    image: mysql:5.7.30
     restart: unless-stopped
-    command:
-      - --secure-file-priv=/
+    command: >
+      --sql-mode='STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION'
+      --general-log=ON
+      --log-queries-not-using-indexes=ON
     environment:
       MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
       MYSQL_USER: ${DB_LOGIN}
       MYSQL_PASSWORD: ${DB_PASSWORD}
 
+  mysql2:
+    image: mysql:5.7.30
+    restart: unless-stopped
+    command: >
+      --sql-mode='STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION'
+      --general-log=ON
+      --log-queries-not-using-indexes=ON
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_USER: ${DB_LOGIN}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+
+  proxysql:
+    image: proxysql/proxysql
+    restart: unless-stopped
+    volumes:
+      - "./proxysql.cnf:/etc/proxysql.cnf"
+    depends_on:
+      - "mysql1"
+      - "mysql2"
+
   webserver:
-    image: zetman13/archi:task1
+    image: zetman13/archi:task3
     restart: unless-stopped
     ports:
       - "8080:8080"
     depends_on:
-      - "mysql"
+      - "proxysql"
     environment:
-      DB_HOST: mysql
-      DB_PORT: 3306
+      DB_HOST: proxysql
+      DB_PORT: 6033
       DB_NAME: ${DB_NAME}
       DB_LOGIN: ${DB_LOGIN}
       DB_PASSWORD: ${DB_PASSWORD}

@@ -24,7 +24,7 @@ COPY web_server /archi/web_server
 COPY --from=builder /archi/web_server/build/main /archi/web_server/build/main
 
 RUN apt-get update -y && apt-get install -y \
-    libpoco-dev
+    libpoco-dev mysql-client
 
 CMD /archi/web_server/build/main\
  --db_host=$DB_HOST\
