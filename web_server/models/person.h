@@ -14,7 +14,8 @@ namespace database {
         int _age;
 
     public:
-        static Person fromJSON(const Poco::JSON::Object::Ptr &object);
+        //static Person fromJSON(const Poco::JSON::Object::Ptr &object);
+        static Person fromJSON(const std::string &json);
 
         const std::string &get_login() const;
 
@@ -42,8 +43,9 @@ namespace database {
 
         void db_delete();
 
-        Poco::JSON::Object::Ptr toJSON() const;
+        void queue_save();
 
+        Poco::JSON::Object::Ptr toJSON() const;
     };
 }
 

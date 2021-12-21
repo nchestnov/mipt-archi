@@ -3,50 +3,54 @@ project(Archi C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 
-#enable_testing()
 
-#find_package(GTest REQUIRED)
 find_package(Threads)
 find_package(OpenSSL)
 find_package(Poco REQUIRED COMPONENTS Foundation Util Net XML JSON Crypto NetSSL)
+find_package(CppKafka REQUIRED)
+find_package(Boost COMPONENTS filesystem system program_options regex REQUIRED)
 
 if (NOT ${Poco_FOUND})
     message(FATAL_ERROR "Poco C++ Libraries not found!")
 endif()
 
 include_directories(${Poco_INCLUDE_DIRS})
-#include_directories(${GTEST_INCLUDE_DIRS})
+include_directories(${Boost_INCLUDE_DIR})
 include_directories("/usr/include/mysql")
 include_directories("/usr/local/include/mysql")
 link_directories("/usr/local/lib")
 
-add_executable(main main.cpp models/person.cpp config/config.cpp db_connector/db_connector.cpp)
-#add_executable(tests tests.cpp models/person.cpp config/config.cpp db_connector/db_connector.cpp)
+add_executable(webserver webserver.cpp models/person.cpp config/config.cpp db_connector/db_connector.cpp)
+add_executable(worker worker.cpp models/person.cpp config/config.cpp db_connector/db_connector.cpp)
 
-target_compile_options(main PRIVATE -Wall -Wextra -pedantic -Werror)
-#target_compile_options(tests PRIVATE -Wall -Wextra -pedantic -Werror)
+target_include_directories(webserver PRIVATE "${CMAKE_BINARY_DIR}")
+target_include_directories(worker PRIVATE "${CMAKE_BINARY_DIR}")
 
-target_link_libraries(main PRIVATE
+target_compile_options(webserver PRIVATE -Wall -Wextra -pedantic -Werror)
+target_compile_options(worker PRIVATE -Wall -Wextra -pedantic -Werror)
+
+target_link_libraries(webserver PRIVATE
         ${CMAKE_THREAD_LIBS_INIT}
         ${Poco_LIBRARIES}
         "PocoData"
         "PocoDataMySQL"
-        "mysqlclient")
-#target_link_libraries(tests PRIVATE
-#        ${GTEST_LIBRARIES}
-#        ${CMAKE_THREAD_LIBS_INIT}
-#        ${Poco_LIBRARIES}
-#        "PocoData"
-#        "PocoDataMySQL"
-#        "mysqlclient"
-#        )
+        "mysqlclient"
+        "rdkafka++"
+        CppKafka::cppkafka
+        ${Boost_LIBRARIES})
 
-set_target_properties(
-        main
-        #tests
-        PROPERTIES CXX_STANDARD 17 CXX_STANDARD_REQUIRED ON)
+target_link_libraries(worker PRIVATE
+        ${CMAKE_THREAD_LIBS_INIT}
+        ${Poco_LIBRARIES}
+        "PocoData"
+        "PocoDataMySQL"
+        "mysqlclient"
+        "rdkafka++"
+        CppKafka::cppkafka
+        ${Boost_LIBRARIES})
 
-#enable_testing()
-#add_test(tests gtests)
-#include(GoogleTest)
-#gtest_discover_tests(tests)
+set_target_properties(webserver PROPERTIES LINKER_LANGUAGE CXX)
+set_target_properties(webserver PROPERTIES CXX_STANDARD 17 CXX_STANDARD_REQUIRED ON)
+
+set_target_properties(worker PROPERTIES LINKER_LANGUAGE CXX)
+set_target_properties(worker PROPERTIES CXX_STANDARD 17 CXX_STANDARD_REQUIRED ON)

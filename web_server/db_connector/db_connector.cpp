@@ -1,10 +1,15 @@
 #include "db_connector.h"
 #include "../config/config.h"
+#include "Poco/Logger.h"
+
+using Poco::Logger;
 
 namespace database{
     Database::Database(){
         _connection_string+="host=";
         _connection_string+=Config::get().get_db_host();
+        _connection_string+=";port=";
+        _connection_string+=Config::get().get_db_port();
         _connection_string+=";user=";
         _connection_string+=Config::get().get_db_login();
         _connection_string+=";db=";

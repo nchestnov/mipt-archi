@@ -41,7 +41,6 @@ public:
 
     void get_person_by_login(Poco::Net::HTMLForm &form, HTTPServerResponse &response){
         std::string login = form.get("login");
-
         std::ostream &ostr = response.send();
         try{
             database::Person person = database::Person::findByLogin(login);
@@ -72,17 +71,20 @@ public:
         Logger::root().information("GET /person?first_name="+first_name+"&last_name="+last_name);
     }
 
-    bool validate_json(Poco::JSON::Object::Ptr &json){
+    bool validate_json(std::string &raw_json){
+        Poco::JSON::Parser parser;
+        Poco::JSON::Object::Ptr json = parser.parse(raw_json).extract<Poco::JSON::Object::Ptr>();
         return json->has("login") && json->has("first_name") && json->has("last_name") && json->has("age");
     }
 
-    void post_person(Poco::JSON::Object::Ptr &json, HTTPServerResponse &response){
+    void post_person(std::string &json, HTTPServerResponse &response){
         database::Person new_person = database::Person::fromJSON(json);
         try {
             database::Person existing_person = database::Person::findByLogin(new_person.get_login());
             response.setStatusAndReason(Poco::Net::HTTPResponse::HTTPStatus::HTTP_CONFLICT);
         } catch(Poco::Data::NoDataException&) {
-            new_person.db_save();
+            //new_person.db_save();
+            new_person.queue_save();
             response.setStatusAndReason(Poco::Net::HTTPResponse::HTTPStatus::HTTP_CREATED);
         }
 
@@ -112,11 +114,11 @@ public:
             std::ostringstream out_string_stream;
             Poco::StreamCopier::copyStream(request.stream(), out_string_stream);
             std::string raw_json = out_string_stream.str();
-            Poco::JSON::Parser parser;
-            Poco::JSON::Object::Ptr json = parser.parse(raw_json).extract<Poco::JSON::Object::Ptr>();
+            //Poco::JSON::Parser parser;
+            //Poco::JSON::Object::Ptr json = parser.parse(raw_json).extract<Poco::JSON::Object::Ptr>();
 
-            if (validate_json(json)){
-                post_person(json, response);
+            if (validate_json(raw_json)){
+                post_person(raw_json, response);
             } else {
                 bad_request(response);
             }

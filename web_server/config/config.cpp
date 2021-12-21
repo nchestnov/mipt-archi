@@ -1,7 +1,6 @@
 #include "config.h"
 
-Config::Config()
-= default;
+Config::Config() = default;
 
 Config &Config::get() {
     static Config _instance;
@@ -28,6 +27,18 @@ const std::string &Config::get_db_password() const {
     return _db_password;
 }
 
+const std::string &Config::get_queue_host() const {
+    return _queue_host;
+}
+
+const std::string &Config::get_queue_topic() const {
+    return _queue_topic;
+}
+
+const std::string &Config::get_queue_group_id() const {
+    return _queue_group_id;
+}
+
 std::string &Config::db_port() {
     return _db_port;
 }
@@ -46,4 +57,16 @@ std::string &Config::db_password() {
 
 std::string &Config::db_name() {
     return _db_name;
+}
+
+std::string &Config::queue_host() {
+    return _queue_host;
+}
+
+std::string &Config::queue_topic() {
+    return _queue_topic;
+}
+
+std::string &Config::queue_group_id() {
+    return _queue_group_id;
 }

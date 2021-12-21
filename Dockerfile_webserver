@@ -1,0 +1,46 @@
+FROM ubuntu:20.04 AS builder
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update -y && apt-get install -y \
+    git \
+    cmake \
+    g++ \
+    libpoco-dev \
+    libboost-all-dev \
+    librdkafka-dev
+
+WORKDIR /
+RUN git clone https://github.com/mfontanini/cppkafka && cd cppkafka && mkdir build && cd build && cmake .. && make && make install
+
+COPY web_server /archi/web_server
+
+WORKDIR /archi/web_server/build
+
+RUN cmake .. && cmake --build . --target webserver -j 9
+
+FROM ubuntu:20.04
+EXPOSE 8080
+ENV DEBIAN_FRONTEND=noninteractive \
+    DB_HOST=127.0.0.1 \
+    DB_PORT=3306 \
+    DB_NAME=Person \
+    DB_LOGIN=root \
+    DB_PASSWORD=admin \
+    QUEUE_HOST=kafka-node-1 \
+    QUEUE_TOPIC=webserver
+
+COPY web_server /archi/web_server
+COPY --from=builder /archi/web_server/build/webserver /archi/web_server/build/webserver
+COPY --from=builder /usr/local/lib/libcppkafka.so.0.4.0 /usr/local/lib/libcppkafka.so.0.4.0
+
+RUN apt-get update -y && apt-get install -y libpoco-dev librdkafka++1 mysql-client
+
+CMD /archi/web_server/build/webserver \
+ --db_host=$DB_HOST\
+ --db_port=$DB_PORT\
+ --db_name=$DB_NAME\
+ --db_login=$DB_LOGIN\
+ --db_password=$DB_PASSWORD\
+ --queue_host=$QUEUE_HOST\
+ --queue_topic=$QUEUE_TOPIC

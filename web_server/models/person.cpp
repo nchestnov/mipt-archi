@@ -1,11 +1,17 @@
 #include "person.h"
+#include "../config/config.h"
 #include "../db_connector/db_connector.h"
+#include <cppkafka/cppkafka.h>
 #include <Poco/Data/RecordSet.h>
+#include "Poco/Logger.h"
+#include "Poco/JSON/Object.h"
+#include <Poco/JSON/Parser.h>
 
 using namespace Poco::Data::Keywords;
 using Poco::Data::Session;
 using Poco::Data::Statement;
 using Poco::Data::RecordSet;
+using Poco::Logger;
 
 namespace database {
     Poco::JSON::Object::Ptr Person::toJSON() const {
@@ -17,12 +23,16 @@ namespace database {
         return root;
     }
 
-    Person Person::fromJSON(const Poco::JSON::Object::Ptr &object) {
+    //Person Person::fromJSON(const Poco::JSON::Object::Ptr &object) {
+    Person Person::fromJSON(const std::string &json) {
+        Poco::JSON::Parser parser;
+        Poco::JSON::Object::Ptr json_parsed = parser.parse(json).extract<Poco::JSON::Object::Ptr>();
+
         Person person;
-        person.login() = object->getValue<std::string>("login");
-        person.first_name() = object->getValue<std::string>("first_name");
-        person.last_name() = object->getValue<std::string>("last_name");
-        person.age() = object->getValue<int>("age");
+        person.login() = json_parsed->getValue<std::string>("login");
+        person.first_name() = json_parsed->getValue<std::string>("first_name");
+        person.last_name() = json_parsed->getValue<std::string>("last_name");
+        person.age() = json_parsed->getValue<int>("age");
         return person;
     }
 
@@ -48,12 +58,11 @@ namespace database {
         }
 
         catch (Poco::Data::MySQL::ConnectionException &e) {
-            std::cout << "connection:" << e.what() << std::endl;
+            Logger::root().error(e.what());
             throw;
         }
         catch (Poco::Data::MySQL::StatementException &e) {
-
-            std::cout << "statement:" << e.what() << std::endl;
+            Logger::root().error(e.what());
             throw;
         }
     }
@@ -89,18 +98,16 @@ namespace database {
         }
 
         catch (Poco::Data::MySQL::ConnectionException &e) {
-            std::cout << "connection:" << e.what() << std::endl;
+            Logger::root().error(e.what());
             throw;
         }
         catch (Poco::Data::MySQL::StatementException &e) {
-
-            std::cout << "statement:" << e.what() << std::endl;
+            Logger::root().error(e.what());
             throw;
         }
     }
 
     void Person::db_save() {
-
         try {
             Poco::Data::Session session = database::Database::get().create_session();
             Poco::Data::Statement insert(session);
@@ -114,12 +121,11 @@ namespace database {
             insert.execute();
         }
         catch (Poco::Data::MySQL::ConnectionException &e) {
-            std::cout << "connection:" << e.what() << std::endl;
+            Logger::root().error(e.what());
             throw;
         }
         catch (Poco::Data::MySQL::StatementException &e) {
-
-            std::cout << "statement:" << e.what() << std::endl;
+            Logger::root().error(e.what());
             throw;
         }
     }
@@ -144,6 +150,19 @@ namespace database {
             std::cout << "statement:" << e.what() << std::endl;
             throw;
         }
+    }
+
+    void Person::queue_save() {
+        cppkafka::Configuration config = {
+                {"metadata.broker.list", Config::get().get_queue_host()}
+        };
+
+        cppkafka::Producer producer(config);
+        std::stringstream ss;
+        Poco::JSON::Stringifier::stringify(toJSON(), ss);
+        std::string message = ss.str();
+        producer.produce(cppkafka::MessageBuilder(Config::get().get_queue_topic()).partition(0).payload(message));
+        producer.flush();
     }
 
     const std::string &Person::get_login() const {

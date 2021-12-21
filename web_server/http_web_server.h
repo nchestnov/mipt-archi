@@ -92,38 +92,52 @@ protected:
 
         options.addOption(
                 Option("db_host", "", "Database host or IP address")
-                        .required(true)
-                        .repeatable(false)
-                        .argument("value")
-                        .callback(OptionCallback<HTTPWebServer>(this, &HTTPWebServer::handleDBHost)));
+                .required(true)
+                .repeatable(false)
+                .argument("value")
+                .callback(OptionCallback<HTTPWebServer>(this, &HTTPWebServer::handleDBHost)));
 
         options.addOption(
                 Option("db_port", "", "Database port")
-                        .required(true)
-                        .repeatable(false)
-                        .argument("value")
-                        .callback(OptionCallback<HTTPWebServer>(this, &HTTPWebServer::handleDBPort)));
+                .required(true)
+                .repeatable(false)
+                .argument("value")
+                .callback(OptionCallback<HTTPWebServer>(this, &HTTPWebServer::handleDBPort)));
 
         options.addOption(
                 Option("db_name", "", "Database name")
-                        .required(true)
-                        .repeatable(false)
-                        .argument("value")
-                        .callback(OptionCallback<HTTPWebServer>(this, &HTTPWebServer::handleDBName)));
+                .required(true)
+                .repeatable(false)
+                .argument("value")
+                .callback(OptionCallback<HTTPWebServer>(this, &HTTPWebServer::handleDBName)));
 
         options.addOption(
                 Option("db_login", "", "Database login")
-                        .required(true)
-                        .repeatable(false)
-                        .argument("value")
-                        .callback(OptionCallback<HTTPWebServer>(this, &HTTPWebServer::handleDBLogin)));
+                .required(true)
+                .repeatable(false)
+                .argument("value")
+                .callback(OptionCallback<HTTPWebServer>(this, &HTTPWebServer::handleDBLogin)));
 
         options.addOption(
                 Option("db_password", "", "Database password")
-                        .required(true)
-                        .repeatable(false)
-                        .argument("value")
-                        .callback(OptionCallback<HTTPWebServer>(this, &HTTPWebServer::handleDBPassword)));
+                .required(true)
+                .repeatable(false)
+                .argument("value")
+                .callback(OptionCallback<HTTPWebServer>(this, &HTTPWebServer::handleDBPassword)));
+
+        options.addOption(
+                Option("queue_host", "", "Queue host")
+                .required(true)
+                .repeatable(false)
+                .argument("value")
+                .callback(OptionCallback<HTTPWebServer>(this, &HTTPWebServer::handleQueueHost)));
+
+        options.addOption(
+                Option("queue_topic", "", "Queue topic")
+                .required(true)
+                .repeatable(false)
+                .argument("value")
+                .callback(OptionCallback<HTTPWebServer>(this, &HTTPWebServer::handleQueueTopic)));
     }
 
     void handleHelp([[maybe_unused]] const std::string &name, [[maybe_unused]] const std::string &value){
@@ -154,6 +168,14 @@ protected:
 
     void handleDBPassword([[maybe_unused]] const std::string &name, [[maybe_unused]] const std::string &value){
         Config::get().db_password() = value;
+    }
+
+    void handleQueueHost([[maybe_unused]] const std::string &name, [[maybe_unused]] const std::string &value){
+        Config::get().queue_host() = value;
+    }
+
+    void handleQueueTopic([[maybe_unused]] const std::string &name, [[maybe_unused]] const std::string &value){
+        Config::get().queue_topic() = value;
     }
 
     int main([[maybe_unused]] const std::vector<std::string> &args) override{
